@@ -16,7 +16,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 package HTML::Latex;
-$VERSION = 0.9;
+$VERSION = '1.0';
 
 use strict;
 # use warnings;
@@ -256,7 +256,7 @@ There are a number of different types of HTML tags support by
 HTML::Latex.  The list is: command, environment, single, other, table,
 image, and ignore.  Each are described below.  TEX1 and TEX2 mean the
 first and second value given by <tex>.  NAME is given by the name
-attribute.  VALUE is the value nested within an HTML tag.
+attribute.  VALUE is the value nested within an HTML tag.  
 
 =head2 command
 
@@ -285,6 +285,15 @@ attribute.  VALUE is the value nested within an HTML tag.
  HTML Example:   <DT>Foo
  TeX  Key:       TEX1 VALUE TEX2
  TeX  Example:   \item[Foo]
+
+=head2 kill
+
+ HTML Key:       <NAME>VALUE</NAME>
+ HTML Example:   <SCRIPT>javascript.garbage()</SCRIPT>
+ TeX  Key:       ""
+ TeX  Example:   ""
+
+This is of particular fun because any nested HTML tags are also ignored.  Good for removing unwanted javascript.
 
 =head2 table
 
@@ -475,6 +484,7 @@ my %types = (
 	     "single"      => \&single_handler,
 	     "ignore"      => \&texify,
 	     "other"       => \&other_handler,
+	     "kill"        => sub {return ""},
 
 	     "image"       => \&image_handler,
 	     "table"       => \&table_handler,
@@ -1366,6 +1376,7 @@ HTML::Latex under the section "CONFIGURATION FILE".
     <tag name="pre" type="environment">
         <tex>verbatim</tex>
     </tag>
+    <tag name="script" type="kill"></tag>
     <tag name="strong" type="command">
         <tex>textbf</tex>
     </tag>

@@ -8,17 +8,10 @@ README
 README.win.txt
 TODO
 t/tags.gif
-t/tags.tex
-t/tags.tex.old
 t/tags.correct
-t/invalids.log
 t/tags.html
 t/tags.png
 t/tags.t
-t/tags.log
-t/invalids.t
-t/tags.log.correct
-t/invalids.correct
 t/foreigns.html
 t/foreigns.correct
 t/foreigns.t

@@ -1,5 +1,12 @@
 Revision history for Perl extension HTML::Latex.
 
+1.0   Thurs Sep 14 11:38:12 MST 2000
+	- removed invalids.t from testing and any log testing.  It was
+          stupid to have it in there in the first place.
+	- added 'kill' type
+	- made SCRIPT into 'kill'.  So, anything in SCRIPT /SCRIPT is
+        ignored. In other words, javascript is completely ignored now.
+
 0.9   Mon Aug 28 22:34:15 MST 2000
 	- set_log now accepts IO::File objects or FileHandle objects.
 	- Added support for international characters.
