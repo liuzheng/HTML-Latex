@@ -1,15 +1,15 @@
 #!/usr/bin/perl -w
-use HTML::Latex;
+use Latex;
 use strict;
 
 # make a parser that logs to a file.
-my $parser = HTML::Latex->new('html2latex.xml');
+my $parser = new HTML::Latex;
 $parser->set_log('t/invalids.log');
 my @files = qw(
-	       cow000.html 
-	       http://test.fake.url 
-	       http://another.fake.url/fake/path/and/file.html 
-	       fake/relateive.html 
+	       cow000.html
+	       http://test.fake.url
+	       http://another.fake.url/fake/path/and/file.html
+	       fake/relateive.html
 	       /fake/absolute.html
 	       );
 
@@ -35,7 +35,7 @@ sub compare {
 	print "not ok\n";
 	return;
     }
-    
+
     unless(-f $correct){
 	print STDERR "Tester Error: cannot find file $correct\n";
 	print "not ok\n";

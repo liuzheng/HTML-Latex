@@ -86,7 +86,7 @@ align center &
 \textbf{This is bold}
 \\ 
  This is not.\\ 
- \$words\{cow\} = "moo"; \# this is code\\ 
+ \$words\{cow\} = ``moo''; \# this is code\\ 
  This is not.\\ 
 \begin{quote}
 This is a block quote
@@ -99,10 +99,7 @@ This is centered text
  This is not.\\ 
  This is not a comment\\ 
 \begin{center}
-\begin{center}
-\includegraphics[scale=1]{t/tags.png}
-\end{center}
-\\ 
+\includegraphics[scale=1]{./tags.png} \\ 
 this is an image that does not work\\ 
  Both the pictures are centered. 
 \end{center}

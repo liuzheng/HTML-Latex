@@ -1,3 +1,5 @@
 FILE: renamed t/tags.tex t/tags.tex.old
 FILE: Processing t/tags.html and writing to t/tags.tex
-FILE: Couldn't find cow.jpg; using alt
+IMG: Converted tags.gif to ./tags.png
+FILE: Unable to access cow.jpg
+IMG: Couldn't convert cow.jpg; using alt

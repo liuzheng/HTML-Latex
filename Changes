@@ -1,5 +1,13 @@
 Revision history for Perl extension HTML::Latex.
 
+0.9   Mon Aug 28 22:34:15 MST 2000
+	- set_log now accepts IO::File objects or FileHandle objects.
+	- Added support for international characters.
+	- Added quote-expansion
+	- Added ability to pass a FileHandle to html2latex().
+	- Added method parse_string().
+	- ~ doesn't expand to $ENV{HOME} unless $ENV{HOME} exists. 
+
 0.8   Thu Aug 17 00:32:36 2000
         - Changed handler routine paramater order and got rid of
 	$content_ref.

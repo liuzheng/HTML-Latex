@@ -1,6 +1,22 @@
 #!/usr/bin/perl -w
+#   HTML::Latex
+#   Copyright (C) 2000 Peter Thatcher
+
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
 package HTML::Latex;
-$VERSION = 0.8;
+$VERSION = 0.9;
 
 use strict;
 # use warnings;
@@ -31,21 +47,39 @@ HTML::Latex - Creates a Latex file from an HTML file.
  $parser->add_package(@packages);
  $parser->ban_tag(@banned);
  $parser->set_log($logfile);
- foreach my $uri (@ARGV) {     
+
+ # Option 1:
+ foreach my $uri (@ARGV) {
     my ($htmlfile,$latexfile) = $parser->html2latex($uri);
-    latex2pdf($htmlfile,$latexfile);
  }
+
+ # Option 2:
+ foreach my $uri (@ARGV) {
+    my $in = IO::File->new("< $uri");
+    my $out = IO::File->new("> $uri.tex");
+    $parser->html2latex($in,$out);
+ }
+
+ # Option 3:
+ my $html_string = join("\n",<>);
+ my $tex_string = $parser->parse_string($html_string,1);
+
+ # Option 4:
+ my $html_string = join("",@ARGV);
+ my $tex_string = $parser->parse_string($html_string);
+
+print $tex_string;
 
 =head1 DESCRIPTION
 
 This class is used to create a text file in Latex format from a file
 in HTML format.  Use the class as follows:
 
-1. Create a new HTML::Latex object.  
+1. Create a new HTML::Latex object.
 
 2. Override any options using set_option(), add_package(), ban_tag(), or set_log().
 
-3. Run html2latex() on a file or URL.  
+3. Run html2latex() on a file or URL.
 
 4. Do whatever you want with the filename that was returned.
 
@@ -53,7 +87,7 @@ in HTML format.  Use the class as follows:
 
 =over
 
-=item B<$p = HTML::Latex-E<gt>new($conffile)> 
+=item B<$p = HTML::Latex-E<gt>new($conffile)>
 
 Creates a new HTML::Latex object.  It parses the configuation file
 $conffile to set attributes.  The format of that file can be found in
@@ -63,11 +97,11 @@ Example:
 
     my $parser = HTML::Latex->new();
 
-=item B<($htmlfile,$latexfile) = $p-E<gt>html2latex($url)> 
+=item B<($htmlfile,$latexfile) = $p-E<gt>html2latex($in,$out)>
 
-$url is any URL or filename.  If it is a URL, it is mirrored locally.
-The local location is returned as $htmlfile.  The method produces a
-Latex file $latexfile.
+$in is any URL or filename or FileHandle.  If it is a URL, it is
+mirrored locally.  The local location is returned as $htmlfile.  The
+method produces a Latex file $latexfile.
 
 Locally mirrored files are all stored in the "store" directory which
 can be set with either set_option() or in the configuration file.  See
@@ -83,12 +117,23 @@ url http://slashdot.org/index.html would be used.
 
 Example:
 
-    my($htmlfile,$latexfile) = 
+    my($htmlfile,$latexfile) =
        $parser->html2latex('report01.html');
 
-=item B<$p-E<gt>set_option(\%options)> 
 
-Sets on option.  For a description of options, see the OPTION section below.
+=item B<$tex_string = $p-E<gt>parse_string($html_string [,$full])>
+
+$html_string is an HTML string.  $tex_string is a LaTeX string.  If
+$full is 0, then any <HTML> and <BODY> tags are ignored, and the
+string is just plain tex.  If $full is 1, then <HTML> and <BODY> tags
+are implicitly added.  Basically, it's a choice as to whether or not
+$tex_string has a LaTeX preamble in it.
+
+=item B<my @old_values = $p-E<gt>set_option(\%options)>
+
+Sets on option.  For a description of options, see the OPTION section
+below.  Returns an list of all the old values based on the keys of
+%options.
 
 Example:
 
@@ -99,11 +144,11 @@ Example:
 Adds packages to the list used by \usepackage{} in Latex.  The
 defaults are fullpage, graphicx, and url.
 
-Example:    
+Example:
 
     $parser->add_package('doublespace');
 
-=item B<$p-E<gt>ban_tag(@banned)> 
+=item B<$p-E<gt>ban_tag(@banned)>
 
 Add @banned to the list of tags that html2latex() will ignore.  This
 overrides tag definitions in the configuration file. By default, the
@@ -114,14 +159,15 @@ Example:
 
     $parser->ban_tag('code');
 
-=item B<$p-E<gt>set_log($logfile)>
+=item B<my $filehandle = $p-E<gt>set_log($logfile)>
 
-Have errors and messages printed to the filename $logfile.  By
-default, things are printed to STDERR.
+Have errors and messages printed to the filename or FileHandle or
+IO::File $logfile.  By default, things are printed to STDERR.
+set_log() returns the FileHandle of the log file.
 
 Example:
 
-    $parser->set_log('report01.log');
+    my $filehandle = $parser->set_log('report01.log');
 
 =back
 
@@ -140,7 +186,7 @@ nested zero to many <tex> tags. Each of these is described below.
 =item name
 
 The I<name> attributes assigns the other values (I<type> and I<tex>)
-to an HTML tag of a certain name.  
+to an HTML tag of a certain name.
 
 =item type
 
@@ -231,7 +277,7 @@ attribute.  VALUE is the value nested within an HTML tag.
  HTML Key:       <NAME>VALUE
  HTML Example:   <LI>Foo
  TeX  Key:       \TEX1 VALUE
- TeX  Example:   \item Foo 
+ TeX  Example:   \item Foo
 
 =head2 other
 
@@ -250,7 +296,7 @@ This should be applied if and only if a tag is of type IMG.
 
 =head2 ignore
 
-Do nothing.  Has the same affect as banning a tag.  
+Do nothing.  Has the same affect as banning a tag.
 
 =head1 OPTIONS
 
@@ -295,7 +341,7 @@ least I think not).  Default is 12.
 Set the scale for images in the latex file.  This is useful because
 some images in HTML or much to big to fit on a page.  Default is 1.0.
 Scale can be any non-zero positive floating point number; large
-numbers are not recommended. 
+numbers are not recommended.
 
 =item B<border>
 
@@ -314,7 +360,73 @@ Default is false.
 
 The bigger the number set, the more the debugging info printed.  0
 means things relevant to the user.  1 means things that trace some
-code.  2 or greater means dumping data structures.  
+code.  2 or greater means dumping data structures.
+
+=head1 Extending
+
+Extending HTML::Latex basically means making a new tag work.  Usually,
+this would call for writing a new handler.  If a present handler will
+suffice, then you can stip to the 3rd step. It's very simple to do so.
+There are 3 easy steps:
+
+=head2 Write the function.
+
+Write a function (preferably ending in '_handler').  It's input is 1
+HTML::Element and several tex strings.  The type of HTML::Element and
+the value of the strings is set in the XML config file.  Your furtions
+responsibilty is to return a TeX string representing the HTML::Element
+and all of it's children elements.
+
+The children are very easy to take care of.  The string representing
+the children elements is obtained by calling C<texify($html_element)>.
+So, the function really only has to worry about the current
+HTML::Element.
+
+In particular, it must return that comes before and goes after the
+string represting the current HTML::Element.  So, if you wanted a
+handler that print \TAG as the TeX for any <TAG> in HTML and a special
+TEX value given in the config file for </TAG>, then the handler would
+look like this:
+
+ sub my_handler{
+     my ($html_element,$tex) = @_;
+     return '\' . $html_element->tag() . texify($html_element) . $tex;
+ }
+
+In this example, one TEX parameter was passed in by the XML config
+file.  The handler return what comes before the children concatenated
+with the texify-ed children texified with what comes after the
+children.  See the documentation for HTML::Element for all of the
+things you can do with them.
+
+=head2 Assign a tag type to a handler.
+
+Just add an entry to %types below.  It should have a type name as a
+key and a reference to your handler as a value.  Following our
+example, we could add the line:
+
+    "my_type"     =>    \&my_handler,
+
+To %types.
+
+=head2 Add support in the configuration file.
+
+The format of the configuration file is in XML and can be found above
+under CONFIGURATION FILE.  The default XML file is at the bottom of
+Latex.pm under __DATA__. Basically, for every tag you want to use your
+new handler, use <tag> as follows:
+
+ <tag name="TAG_NAME" type="my_type">
+     <tex>TEX_PARAMATER</tex>
+ </tap>
+
+TAG_NAME is, of course, the tag name.  "my_type" is the name of the
+type you assigned your handler to.  TEX_PARAMATER is the value that
+gets placed under $tex in the example handler.
+
+
+That's it.  Now HTML::Latex should obey the new handler and behave
+correctly.
 
 =head1 NOTES
 
@@ -334,12 +446,12 @@ http://linuxtoday.net/bar.html
 =head1 BUGS
 
 * Anything between <TABLE> and <TR> and <TD> is ignored.  I do not
-  know why something would be in there anyway.
+
 
 * Anything between <OL> or <UL> and <LI> will not be ignored, but will
-  really mess Latex up.  
+  really mess Latex up.
 
-=cut 
+=cut
 
 ################### END DOCUMENTATION #######################
 
@@ -363,28 +475,131 @@ my %types = (
 	     "single"      => \&single_handler,
 	     "ignore"      => \&texify,
 	     "other"       => \&other_handler,
-	     
+
 	     "image"       => \&image_handler,
 	     "table"       => \&table_handler,
 	     "pre"         => \&pre_handler,      # Experimental; don't use
-	     );
+	    );
 
 # Some characters typed in HTML need to be altered to be correct in
-# Latex.  These must be done this specific order
+# Latex.  These must be done this specific order All the foreign
+# characters or special ascii characters that need to be altered.  *
+# next the comment means it doesn't really work or is faked. If it's
+# commented out, that means it doesn't work at all.
 my @specials = (
-		['<!--.*-->' , ''],
-		['\$' ,  '\$'],
-	        ['\\\\(?!\$)', "\$\\backslash\$"],
-		['<'  , '$<$'],
- 		['>'  , '$>$'],
-		['&'  , '\&'],
-		['%'  , '\%'],
-		['#'  , '\#'],
-		['{'  , '\{'],
-		['}'  , '\}'],
-		['_'  , '\_'],
-		['\^' , '\^{}']
-		);
+		['<!--.*-->' , ''          ], #comments
+		['\$'    ,  '\$'           ], 
+	        ['\\\\(?!\$)', "\$\\backslash\$"], #\
+		['<'     , '$<$'           ],
+ 		['>'     , '$>$'           ],
+		['&'     , '\&'            ],
+		['%'     , '\%'            ],
+		['#'     , '\#'            ],
+		['{'     , '\{'            ],
+		['}'     , '\}'            ],
+		['_'     , '\_'            ],
+		['\^'    , '\^{}'          ],
+		[chr(161), '!`'            ], #¡
+	       #[chr(162), ''              ], #¢*
+		[chr(163), '{\\pounds}'    ], #£
+	       #[chr(164), ''              ], #¤*
+ 		[chr(165), '{Y\hspace*{-1.4ex}--}'], #¥*
+		[chr(166), '$|$'           ], #¦*
+ 		[chr(167), '{\\S}'         ], #§
+		[chr(168), '\\"{}'         ], #¨
+		[chr(169), '{\\copyright}' ], #©
+		[chr(170), '$^{\underline{a}}$'], #ª*
+		[chr(171), '$\\ll$'        ], #«
+		[chr(172), '$\\neg$'       ], #¬
+		[chr(173), '$-$'           ], #­
+	       #[chr(174), ''              ], #®*
+		[chr(175), '$^-$'          ], #¯
+		[chr(176), '$^{\\circ}$'   ], #°
+		[chr(177), '$\\pm$'        ], #±
+	        [chr(178), '$^2$'          ], #²
+		[chr(179), '$^3$'          ], #³
+		[chr(180), '$^\\prime$'    ], #´
+		[chr(181), '$\\mu$'        ], #µ
+		[chr(182), '{\P}'          ], #¶
+		[chr(183), '$\cdot$'       ], #·
+		[chr(184), ','             ], #¸*
+                [chr(185), '$^1$'          ], #¹
+                [chr(186), '$^{\\underline{\\circ}}$'],	#º*
+                [chr(187), '$\gg$'         ], #»
+                [chr(188), '$\frac{1}{4}$' ], #¼
+		[chr(189), '$\frac{1}{2}$' ], #½
+		[chr(190), '$\frac{3}{4}$' ], #¾
+		[chr(191), '?`'            ], #¿
+		[chr(192), '\\`A'          ], #À
+		[chr(193), '\\\'A'         ], #Á
+		[chr(194), '\\^A'          ], #A
+		[chr(195), '\\~A'          ], #Ã
+		[chr(196), '\\"A'          ], #Ä
+		[chr(197), '{\\AA}'        ], #Å
+		[chr(198), '{\\AE}'        ], #Æ
+		[chr(199), '\\c{C}'        ], #Ç
+		[chr(200), '\\`E'          ], #È
+		[chr(201), '\\\'E'         ], #É
+		[chr(202), '\\^E'          ], #Ê
+		[chr(203), '\\"E'          ], #Ë
+		[chr(204), '\\`I'          ], #Ì
+		[chr(205), '\\\'I'         ], #Í
+		[chr(206), '\\^I'          ], #I
+		[chr(207), '\\"I'          ], #Ï
+		[chr(208), '{D\\hspace*{-1.7ex}-\\hspace{.9ex}}'], #Ð*
+		[chr(209), '\\~N'          ], #Ñ
+		[chr(210), '\\`O'          ], #Ò
+		[chr(211), '\\\'O'         ], #Ó
+		[chr(212), '\\^O'          ], #Ô
+		[chr(213), '\\~O'          ], #Õ
+		[chr(214), '\\"O'          ], #Ö
+		[chr(215), '$\chi$'        ], #×
+		[chr(216), '{\\O}'         ], #Ø
+		[chr(217), '\\`U'          ], #Ù
+		[chr(218), '\\\'U'         ], #Ú
+		[chr(219), '\\^U'          ], #Û
+		[chr(220), '\\"U'          ], #Ü
+		[chr(221), '\\\'Y'         ], #Ý*
+		[chr(222), 'P'             ], #Þ*
+		[chr(223), '$\\beta$'      ], #ß
+		[chr(224), '\\`a'          ], #á
+		[chr(225), '\\\'a'         ], #à
+		[chr(226), '\\^a'          ], #â
+		[chr(227), '\\~a'          ], #ã
+		[chr(228), '\\"a'          ], #ä
+		[chr(229), '\\r{a}'        ], #å
+		[chr(230), '{\ae}'         ], #æ
+		[chr(231), '\\c{c}'        ], #ç
+		[chr(232), '\\`e'          ], #é
+		[chr(233), '\\\'e'         ], #è
+		[chr(234), '\\^e'          ], #ê
+		[chr(235), '\\"e'          ], #ë
+		[chr(236), '\\`{\i}'       ], #ì
+		[chr(237), '\\\'{\\i}'     ], #í
+		[chr(238), '\\^{\\i}'      ], #î
+		[chr(239), '\\"{\\i}'      ], #ï
+		[chr(240), '\\v{o}'        ], #ð
+		[chr(241), '\\~n'          ], #ñ
+		[chr(242), '\\`o'          ], #ò
+		[chr(243), '\\\'o'         ], #ó
+		[chr(244), '\\^o'          ], #ô
+		[chr(245), '\\~o'          ], #õ
+		[chr(246), '\\"o'          ], #ö
+		[chr(247), '$\\div$'       ], #÷
+		[chr(248), '{\\o}'         ], #ø
+		[chr(249), '\\`u'          ], #ù
+		[chr(250), '\\\'u'         ], #ú
+		[chr(251), '\\^u'          ], #û
+		[chr(252), '\\"u'          ], #ü
+		[chr(253), '\\\'y'         ], #ý
+		[chr(254), 'p'             ], #þ*
+		[chr(255), '\\"y'          ], #ÿ
+	       );
+
+# complie matchings
+foreach my $set (@specials) {
+    $set->[0] = qr|$set->[0]|;
+}
 
 ################### END DEFENITIONS #######################
 
@@ -403,7 +618,7 @@ sub new {
     if(defined($conffilename)){
 	$conffile = IO::File->new("< $conffilename");
     } else {
-	$conffile =  \*DATA;	
+	$conffile =  \*DATA;
     }
 
     my $conf = XMLin($conffile,forcearray => ['tex','pre','ban']);
@@ -414,10 +629,10 @@ sub new {
     foreach my $banned (@$banned_ref){
 	$conf->{ban}{$banned}++;
     }
-    
+
     # make any refrences in @tex (see handlers below) to empty strings and new lines
     # Ugly, I know.  Perhaps XML::Simple is too simple.
-    foreach my $tag (keys %{$conf->{tag}}){
+    foreach my $tag (keys %{$conf->{tag}}){ 
 	foreach my $tex (@{$conf->{tag}{$tag}{tex}}){ #some derefrence, eh?
 	    $tex = (ref($tex) ? '' : $tex);   # {} => ''
 	    $tex =~ s/\\N/\n/g;               # \N => newline
@@ -435,49 +650,88 @@ sub new {
 }
 
 # converts html2latex using &texify.
-# <1> The html filename
+# <1> The html filename or filehandle
+# <2> optional second filehandle
 sub html2latex {
-    my ($conf,$file) = @_;
+    my ($conf,$in,$out) = @_;
 
     #global to functions called below, which is what we want
-    local $packages = $conf->{package}; 
+    local $packages = $conf->{package};
     local $options  = $conf->{options};
     local $tags     = $conf->{tag};
     local $banned   = $conf->{ban};
     local $pres     = $conf->{pre};
     local $LOG      = $conf->{log};
-    $options->{store} =~ s/^\s*~/$ENV{HOME}/;
+    $options->{store} =~ s/^\s*~/$ENV{HOME}/ if exists $ENV{HOME};
 
-    print $LOG Dumper $conf if $options->{debug} > 1;	
+    print $LOG Dumper $conf if $options->{debug} > 1;
 
-    #open $file
-    my ($in,$out,$filenamein,$filenameout) = open_files($file,1) if defined($file);
+    #open files.
+    my($filenamein,$filenameout);
+    unless(ref $in and ref $out){ #filenhadles -- leave them alone.
+	($in,$out,$filenamein,$filenameout) = open_files($in,1) if defined($in);
+    }
 
-    if($in && $out){ 
-	#if you have a uri and it exists
-	#build the HTML tree
+    #if you have a uri and it exists
+    #build the HTML tree
+    if($in && $out){
 	my $tree = HTML::TreeBuilder->new;
 	$tree->warn(1);
-	$tree->parse_file($in);
-	
+	my $result = $tree->parse_file($in);
+
 	#here's where all the big magic happens
-	print $out &preamble_handler($tree->root());
-	
+	print $out &preamble_handler($tree->root);
+
 	#destroy the HTML tree
-	$tree->delete();
-	
-	return ($filenamein,$filenameout);       #hands back the filenames and objects
+	$tree->delete;
+
+	return ($filenamein,$filenameout) if ($filenamein && $filenameout);
+	return $result;  #If you recieved filehandles, just return the return of $tree->parse
     } else {
 	# print $LOG "You better give html2latex() a valid filename if you want it to do anything.\n";
 	return;
     }
 }
+
+sub parse_string {
+    my ($conf,$input,$full) = @_;
+    return unless defined($input);
+
+    local $packages = $conf->{package};
+    local $options  = $conf->{options};
+    local $tags     = $conf->{tag};
+    local $banned   = $conf->{ban};
+    local $pres     = $conf->{pre};
+    local $LOG      = $conf->{log};
+    $options->{store} =~ s/^\s*~/$ENV{HOME}/ if exists $ENV{HOME};
+
+    print $LOG Dumper $conf if $options->{debug} > 1;
+
+    my $tree = HTML::TreeBuilder->new;
+    $tree->warn(1);
+    $tree->parse($input);
+
+    my $result;
+    if($full){
+	$result = preamble_handler($tree->root);  # Print whole file
+    } else {
+	$result = texify($tree->find_by_tag_name('body'));
+    }
+    $tree->delete;
+
+    return $result;
+}
+
 # set options for running html2latex
 # <1> is a hash refrence of options
 sub set_option {
     my ($conf,$options) = @_;
+    my @old_values = ();
     while(my ($key,$value) = each %$options){
-	$conf->{options}{$key} = $value if defined($value);
+	if(defined($value)){
+	    push @old_values, $conf->{options}{$key};
+	    $conf->{options}{$key} = $value;
+	}
     }
 }
 
@@ -496,10 +750,16 @@ sub ban_tag {
 }
 
 #set log file to $logfile
+#return FileHandle to log file.
 sub set_log {
     my ($conf,$logfile) = @_;
-    $conf->{log} = FileHandle->new($logfile,'w') or 
-	die "FILE: Bad logfile: $logfile"; 
+    if(ref $logfile){
+	$conf->{log} = $logfile;
+    } else {
+	$conf->{log} = FileHandle->new($logfile,'w') or 
+	  die "FILE: Bad logfile: $logfile";
+    }
+    return $conf->{log};
 }
 ##################### END HANDLERS #########################
 
@@ -545,7 +805,7 @@ sub single_handler{
     return $single . " " . texify($html_element) . "\n";
 }
 
-# HTML input form: <PRE> Bar </PRE> 
+# HTML input form: <PRE> Bar </PRE>
 # Latex output has all of the spaces made into hard spaces and
 # newlines into hard newlines. It's the best I can do since latex
 # doesn't want to respect whitespace.  It's very experimental. One
@@ -576,8 +836,8 @@ sub table_handler{
     my $output = "";
     if($tex eq "table"){
 	# It's a table tag
-	$output = ($options->{mbox}? '\mbox{' : '') . 
-	    create_latex_table($html_element) . ($options->{mbox}? '}' : '');
+	$output = ($options->{mbox}? '\mbox{' : '') .
+	  create_latex_table($html_element) . ($options->{mbox}? '}' : '');
     } else { 
 	# It's a td or tr, let create_latex_table() take care of "\\" and "&"
 	# add the texified text inside
@@ -596,13 +856,14 @@ sub image_handler{
     my $source = $html_element->attr('src') || "";
     my $scale = $html_element->attr('scale') || $options->{image};
     my $alt = $html_element->attr('alt') || "";
-    
+
     if($scale and my $image = convert_image($source,$scale)){
 	# convert worked
 	return "\\$tex\[scale=$scale\]\{$image\} ";
     } else { 
 	#convert didn't work or images weren't selected.
-	print $LOG "FILE: Couldn't find $source; using alt\n";
+	print $LOG "IMG: Couldn't convert $source; using alt\n";
+	print $LOG "\tRecieved <$image>\n" if $options->{debug};
 	return $alt;
     }
 }
@@ -614,13 +875,13 @@ sub preamble_handler{
     my $document_class = $html_element->attr('class') || $options->{document_class} || 'article';
     my $font_size = $html_element->attr('fontsize') || $options->{font_size} || 10;
     my $output;
-    
+
     $output .= "\\documentclass\[${font_size}pt\]\{$document_class\}\n";
     $output .= '\usepackage{' . join(", ",@$packages) . '}' . "\n";
     $output .= '\setlength{\parskip}{1ex}' . "\n" . '\setlength{\parindent}{0ex}' . "\n" 
 	if $options->{paragraph};
     $output .= texify($html_element);
-    
+
     return $output;
 }
 
@@ -634,7 +895,7 @@ sub preamble_handler{
 sub texify {
     my $parent_element = shift;
     my $output = "";
-    
+
     foreach my $html_element ($parent_element->content_list){
 	if(ref $html_element){
 	    # If this element is another HTML::Element
@@ -656,18 +917,19 @@ sub texify {
 	    }
 	} else {
 	    # Otherwise, it's just a string 
-	    print $LOG "\t" x ($parent_element->depth + 1) 
-		, $html_element if $options->{debug} > 1;
+	    print $LOG "\t" x ($parent_element->depth + 1), $html_element if $options->{debug} > 1;
 	    unless($parent_element->is_inside(@$pres)){
 		#don't change any characters if inside a tag such as PRE.
+		#Quote expansion needs more finese.
+		$html_element =~ s/([^\s\[\{\(~])"/$1''/og; #" preceded by character not \s,[,{,or [
+		$html_element =~ s/"/``/og;
 		foreach my $special (@specials){
 		    $html_element =~ s/$special->[0]/$special->[1]/g;
 		}
 	    }
-	    $output .= urlify($html_element); 
+	    $output .= urlify($html_element);
 	}
     }
-
     return $output;
 }
 
@@ -680,12 +942,12 @@ sub open_files {
     #if filename has anything .*html, then remove the extension
     my ($filename,$path,$suffix) = fileparse($htmlfile,'\.\w*html?');
     my $texfile = "$path$filename.tex";
-    
+
     check_for_previous_files($texfile);
-    
+
     my $fh_in = FileHandle->new("< $htmlfile") or die "Can't open $htmlfile: $!";
     my $fh_out = FileHandle->new("> $texfile") or die "Can't open $texfile: $!";
-    print $LOG "FILE: Processing $htmlfile and writing to $texfile\n";    
+    print $LOG "FILE: Processing $htmlfile and writing to $texfile\n";
     return ($fh_in,$fh_out,$htmlfile,$texfile);
 }
 
@@ -697,7 +959,7 @@ sub open_files {
 sub check_for_previous_files {
     my $filename = shift;
     my $override = shift || 1; 
-    
+
     if(-f $filename && $override){
 	rename $filename, "$filename.old";
 	print $LOG "FILE: renamed $filename $filename.old\n"; 
@@ -711,9 +973,9 @@ sub check_for_previous_files {
 sub check_for_current_files {
     my $filename = shift;
     if( -f $filename){
-	print $LOG "FILE: Successfully created $filename\n"; 
+	print $LOG "FILE: Successfully created $filename\n";
 	return $filename;
-    }	
+    }
     else{
 	print $LOG "FILE: Failed to create $filename\n";
 	return;
@@ -726,17 +988,17 @@ sub create_latex_table {
     my $table = shift;
     my $output;
     my($latex_table_ref,$row_number,$column_number) = create_latex_table_def($table);
-    my $border = $table->attr('border') || $options->{border};    
-    
+    my $border = $table->attr('border') || $options->{border};
+
     $output .= "\n\n" . '\begin{tabular}{' . $latex_table_ref . '}' . "\n";
     $output .= "\\hline \n" if $border;
-    
+
     #pay attention to only the TR tags inside the TABLE tag.
     my @rows = grep 'tr', $table->content_list;
     foreach my $row (@rows){
 	#pay attention to only the TD tags inside the TR tags.
 	my @columns = grep 'td', $row->content_list;   
-	
+
 	for my $i (0 .. $column_number - 1){ 
 	    # Make Sure to fill in blank ones if necessary
 	    my $column = $columns[$i];
@@ -745,14 +1007,14 @@ sub create_latex_table {
 	    # Add the puncation at the end if not the last one
 	    $output .= (($i < $column_number -1)?  " &" : ""); 
 	}
-	
+
 	# Add the puncation at the end if not the last one
 	$output .= (($row->pindex() < $row_number -1 or $border)?  " \\\\" : "") . "\n"; 
 	$output .= " \\hline \n" if $border;
     }
-    
+
     $output .= "\n" . '\end{tabular}' . "\n\n";
-    
+
     return $output;
 }
 
@@ -767,14 +1029,14 @@ sub create_latex_table_def {
     my $border = $table->attr('border') || $options->{border};
     my ($row_number,$column_number) = find_table_lengths($table);
     my @column_alignments = create_column_alignments($table);
-    
+
     # define table_def
     my $latex_table_def = ($border? "|" : "");
     for my $i (0 .. $column_number - 1){
 	my $align = $column_alignments[$i];
 	$latex_table_def .= ($align? ($border? $align . "|" : $align) : ($border? "c|" : "c")); 
     }
-    
+
     return ($latex_table_def,$row_number,$column_number);
 }
 
@@ -793,7 +1055,7 @@ sub find_table_lengths {
 	    $max_row_length = @columns;
 	}
     }
-    
+
     #        row_number    column_number
     return (scalar(@rows),$max_row_length);
 }
@@ -817,11 +1079,11 @@ sub create_column_alignments {
 	    } else {
 		$align = 'c';
 	    }
-	    
+
 	    push @column_alignments, $align;
 	}
     }
-    
+
     return @column_alignments;
 }
 
@@ -833,104 +1095,144 @@ sub create_column_alignments {
 sub convert_image {
     my $source = shift;
 
-    if ($source = get_uri($source)){  #If we can find the file
+    my($absolute,$relative) = get_uri($source);
+    if ($absolute and $relative){  #If we can find the file
 	#if it successfully stores the file
-	my ($name,$path,$suffix) = fileparse($source,'\.(gif|png|jpe?g)'); 
+	my ($aname,$apath,$asuffix) = fileparse($absolute,'\.(gif|png|jpe?g)'); 
+	my ($rname,$rpath,$rsuffix) = fileparse($relative,'\.(gif|png|jpe?g)'); 
 
-	if($suffix eq '.gif' || $suffix eq '.jpg' || $suffix eq '.jpeg'){
+	if($asuffix eq '.gif' || $asuffix eq '.jpg' || $asuffix eq '.jpeg'){ # 
 	    # Picture is of a convertable type
 	    if($present{'Image::Magick'}){
 		# convert it with Image::Magick
 		require Image::Magick;
 
-		my $output = "$path$name.png"; #write to and return with png
+		my $aoutput = "$apath$aname.png"; #write to and return with png
+		my $routput = "$rpath$rname.png";
 		my $image = Image::Magick->new();
-		$image->Read("$source");
-		$image->Write("$output");
+		$image->Read("$absolute");
+		$image->Write("$aoutput");
 		undef $image;
-		
-		return $output;
+
+		print $LOG "IMG: Converted $source to $routput\n";
+		return $routput;
 	    } else {
 		# No Image::Magick.  Warn user and return nothing.
 		print $LOG "IMG: Can't convert $source without Image::Magick; using alt\n";
 		return;
 	    }
-	} elsif ($suffix ne '.png'){
+	} elsif ($asuffix eq '.png'){
+	    # It's a PNG for sure.
+	    my $routput = "$rpath$rname.png";
+	    return $routput;
+	} else {
 	    # so, it's not a png,gif, or jpg.  That means it's an invalid.
 	    print $LOG "IMG: Invalid picture type: $source; using alt\n";
 	    return;
 	}
     } else {
+	# We can't even get at the file.
 	return;
     }
 }
+
 # If the filename is really a URL, then go grab it, translate
 # the name to the local file directory, and return that file name.
 # Otherwise, just return the thing you got in.
 # <1> is the URI
 # [2] can specify to change the default host for subsiquent calls
-# return the local file path
+# return ($absolute_path_to_file,$relative_path_to_file);
+# The relative can be absolute itself (same as $absolute).
 {
-    #variables to stay the same across calls of get_uri.  It's used in case we get image URLs with no host or scheme or path.
-    my $HOST = undef;                              #global value of current HOST; includes scheme
-    my $HOST_PATH = undef;                         #path inside host where we start
-    my $SCHEME = undef;                               #scheme originally used 
-    
+    #variables to stay the same across calls of get_uri.  It's used in
+    #case we get image URLs with no host or scheme or path.
+    my $HOST = undef;     #global value of current HOST
+    my $PATH = undef;     #path inside host where we start
+    my $SCHEME = undef;   #scheme originally used
+
     sub get_uri {
-	my $localfile = my $uri = shift;   
+	my ($uri,$absolute_local,$relative_local);
+	$uri = $absolute_local = $relative_local = shift;
 	print $LOG "looking for $uri\n" if $options->{debug};
-	# print $LOG "HOST: " . ($HOST || "") . " HOST_PATH: " . ($HOST_PATH || "") . " SCHEME: " . ($SCHEME || "") . "\n";
-	my $absolute = shift || 0;          #absolute means that you replace #HOST and HOST_START
-	my ($host,$path,$scheme,$filename);
-	
+	my $override = shift || 0;            #absolute means that you replace $HOST and $PATH
+
 	if(-f $uri){ 
-	    #it's a file
-	    $HOST_PATH = dirname($uri);      #make even local relative images work.
+	    # it's an absolute local file.  
+	    $PATH = dirname($uri) if $override; 
 	    print $LOG "returning $uri\n" if $options->{debug};
-	    return $uri;
-	} elsif($uri =~ m|://|){             
-	    #It's a full URL with a HOST
+	    return ($uri,$uri);
+	} elsif(defined($PATH) && -f "$PATH/$uri") {    
+	    #it must be a local relative image
+	    print $LOG "returning $PATH/$uri\n" if $options->{debug};
+	    return ("$PATH/$uri",$uri);
+	} elsif($uri =~ m|://|){ 
+	    #It's a full URL
+
+	    # Load necessary modules if you can.
 	    unless($present{'URI'}) {
 		print $LOG "NEED: Can't handle request of $uri without module URI\n";
 		return;
 	    }
+
 	    require URI;
 	    URI->import();
+
 	    unless($present{'LWP::Simple'}) {
-		print $LOG "NEED: Can't handle request of $uri without module LWP::Simple\n";
+	    	print $LOG "NEED: Can't handle request of $uri without module LWP::Simple\n";
 		return;
 	    }
+
 	    require LWP::Simple;
 	    LWP::Simple->import();
-	    
-	    $uri = new URI($uri);
-	    ($path,$filename) = (($uri->path || "/index.html") =~ m|(.*/)(.*)|);  #the filename and path
-	    
-            #replace the host,host_path, and scheme if it doesn't have a value and we're allowed to
-	    $HOST = $uri->host if $absolute;        
-	    $HOST_PATH = $path if $absolute;        
-	    $SCHEME = $uri->scheme() if $absolute;        
-	    
-	    $localfile = ($options->{store} || '.') . '/' . ($HOST || "") . ($HOST_PATH || "") . $filename;
 
-	    return store_uri($uri,$localfile);    #Now, download the file.  If it fails, return 0.
-	} elsif(defined($HOST)){                    
-	    #It's only a partial URL, but we have a HOST and a HOST PATH to add to the URL
-	    my $host_path = (($uri =~ s|^/||) ? "/" : ($HOST_PATH || "")); #If it is starts with "/", don't include the $HOST_PATH
-	    $localfile = ($options->{store} || '.') . '/' . $HOST . $host_path . $uri;
-	    $uri = $SCHEME . '://' . $HOST . $host_path . $uri;
-		
-	    return store_uri($uri,$localfile);    #Now, download the file.  If it fails, return 0.
-	} elsif(defined($HOST_PATH)) {    
-	    #it must be a local relative image
-	    print $LOG "returning $HOST_PATH/$uri\n" if $options->{debug};
-	    return "$HOST_PATH/$uri";
+	    $uri = new URI($uri);
+	    my ($path,$filename) = ($uri->path =~ m|(.*/)(.*)|);
+	    #replace the host,host_path, and scheme if it doesn't have a value and we're allowed to
+
+	    print $LOG "It's a full URL\n" if $options->{debug};
+	    if($override){
+		$HOST = $uri->host;
+		$PATH = $path || '/';
+		$SCHEME = $uri->scheme;
+		print $LOG "Setting HOST to $HOST, PATH to $PATH, and SCHEME to $SCHEME\n" if $options->{debug};
+	    }
+
+	    my $absolute = ($options->{store} || '.') . '/' . ($uri->host || "") . ($path || "/") . ($filename || "index.html");
+
+	    if(store_uri($uri,$absolute)){    #Now, download the file.  If it fails, return 0.
+		print $LOG "returning $absolute\n" if $options->{debug};
+		return ($absolute,$absolute);
+	    } else {
+		return;
+	    }
+	} elsif(defined($HOST) && defined($SCHEME)){                    
+	    #It's a partial URL.
+	    if($uri =~ m|^/|){
+		#it's an absolute partial URL
+		my $absolute_uri = $SCHEME . '://' . $HOST . $uri;
+		$absolute_local = ($options->{store} || '.') . '/' . $HOST . $uri;
+		if(store_uri($absolute_uri,$absolute_local)){    #Now, download the file.  If it fails, return nothing.
+		    return($absolute_local,$absolute_local);
+		} else {
+		    return;
+		}
+	    } else {
+		#it's a relative partial URL
+		my $absolute_uri = $SCHEME . '://' . $HOST . $PATH . $uri;
+		$absolute_local = ($options->{store} || '.') . '/' . $HOST . $PATH . $uri;
+		if(store_uri($absolute_uri,$absolute_local)){    #Now, download the file.  If it fails, return nothing.
+		    return($absolute_local,$uri);
+		} else {
+		    return;
+		}
+	    }
 	} else {
 	    print $LOG "FILE: Unable to access $uri\n";
 	    return;
 	}
     }
 }
+
 # store a URI as a local file, and create a path if necessary
 # <1> The URI
 # <2> The file to store it in
@@ -958,8 +1260,8 @@ sub store_uri {
 
 # replaces URL with \url{URL}.  This code is taken right from the Perl
 # Cookbook, which I reccomend.  Honestly, I'm not quite sure how it
-# works; but, it does.  
-# <1> string to urlify.  
+# works; but, it does.
+# <1> string to urlify.
 {
 
     # I think putting them here will prevent them from needing to be
@@ -979,18 +1281,18 @@ sub store_uri {
 
 __DATA__
 
-<!-- 
+<!--
 
 Written by Peter Thatcher, 08/2000.
 
 html2latex.xml - the configuration file for HTML::Latex and
-html2latex.  
+html2latex.
 
 Documentation on the file format can be found in the manpage for
 HTML::Latex under the section "CONFIGURATION FILE".
 
 -->
-<!-- Head Tag needed: DON'T DELETE!!-->
+<!-- Head Tag needed: DO NOT DELETE!!-->
 <conf>
     <!-- Tag description -->
     <tag name="b" type="command">

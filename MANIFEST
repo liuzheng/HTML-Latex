@@ -5,7 +5,7 @@ Latex.pm
 Makefile.PL
 MANIFEST
 README
-TESTING
+README.win.txt
 TODO
 t/tags.gif
 t/tags.tex
@@ -19,3 +19,6 @@ t/tags.log
 t/invalids.t
 t/tags.log.correct
 t/invalids.correct
+t/foreigns.html
+t/foreigns.correct
+t/foreigns.t
