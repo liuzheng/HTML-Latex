@@ -1,0 +1,30 @@
+Revision history for Perl extension HTML::Latex.
+
+0.8   Thu Aug 17 00:32:36 2000
+        - Changed handler routine paramater order and got rid of
+	$content_ref.
+	- Ported the conversion of images to ImageMagick
+	- Changed all calls to $html_element->content to
+	$html_element->content_list to deal with undef's (requires
+	HTML::Tree .68).
+	- Changed get_uri and store_uri a lot.
+	- Improved the information printed by &texify when using
+	$option{debug}.
+	- Tried to improve <PRE> and <CODE> behavior.  I don't know what
+	to make it do.  It's sort of difficult.
+	- Fixed the <LI> bug.
+	- Added an HTML-style paragraph option (no indent and 1 line
+	paragraph spacing).
+	- Altered default behavior of \[sub]section to \[sub]section-.
+	- Changed call to texify from array of parents to single parent
+	(more efficient and also can check try attributes).
+	- Added the ban_tag option.
+	- Fixed "^" bug.
+	- Made relative local IMG sources work correcly.  At least, I
+	hope.  All this local/network absolute/relative crap is getting on
+	my nerves.  It never seems to work correctly.
+
+0.01  Thu Aug 17 00:02:34 2000
+	- original version; created by h2xs 1.20 with options
+		-XA -n HTML::Latex
+

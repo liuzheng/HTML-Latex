@@ -1,0 +1,5 @@
+FILE: Unable to access cow000.html
+URI: Unable to access http://test.fake.url
+URI: Unable to access http://another.fake.url/fake/path/and/file.html
+URI: Unable to access http://another.fake.url/fake/path/and/fake/relateive.html
+URI: Unable to access http://another.fake.url/fake/absolute.html
